@@ -21,6 +21,9 @@ import {
 import { toast } from 'sonner';
 import { useLocalStorage, useWindowSize } from 'usehooks-ts';
 
+import { type PutBlobResult } from '@vercel/blob';
+import { upload } from '@vercel/blob/client';
+
 import { sanitizeUIMessages } from '@/lib/utils';
 
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
@@ -141,30 +144,48 @@ function PureMultimodalInput({
   ]);
 
   const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await fetch('/api/files/upload', {
-        method: 'POST',
-        body: formData,
+
+      const data = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/files/upload'
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
+      const { url, pathname, contentType } = data;
 
-        return {
-          url,
-          name: pathname,
-          contentType: contentType,
-        };
-      }
-      const { error } = await response.json();
-      toast.error(error);
+      return {
+        url,
+        name: pathname,
+        contentType: contentType,
+      };
     } catch (error) {
       toast.error('Failed to upload file, please try again!');
     }
+
+    // const formData = new FormData();
+    // formData.append('file', file);
+
+    // try {
+    //   const response = await fetch('/api/files/upload', {
+    //     method: 'POST',
+    //     body: formData,
+    //   });
+
+    //   if (response.ok) {
+    //     const data = await response.json();
+        // const { url, pathname, contentType } = data;
+
+        // return {
+        //   url,
+        //   name: pathname,
+        //   contentType: contentType,
+        // };
+    //   }
+    //   const { error } = await response.json();
+    //   toast.error(error);
+    // } catch (error) {
+    //   toast.error('Failed to upload file, please try again!');
+    // }
   };
 
   const handleFileChange = useCallback(

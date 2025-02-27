@@ -1,4 +1,5 @@
 import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -19,50 +20,36 @@ const FileSchema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
+  const body = (await request.json()) as HandleUploadBody;
 
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (request.body === null) {
+  if (body === null) {
     return new Response('Request body is empty', { status: 400 });
   }
 
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as Blob;
+    const jsonResponse = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname) => {
+        return {
+          allowedContentTypes: ['image/jpeg', 'image/png', 'application/pdf'],
+          tokenPayload: JSON.stringify({ pathname }),
+        }
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        console.log('Uploaded blob:', blob, tokenPayload);
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-    }
-
-    const validatedFile = FileSchema.safeParse({ file });
-
-    if (!validatedFile.success) {
-      const errorMessage = validatedFile.error.errors
-        .map((error) => error.message)
-        .join(', ');
-
-      return NextResponse.json({ error: errorMessage }, { status: 400 });
-    }
-
-    // Get filename from formData since Blob doesn't have name property
-    const filename = (formData.get('file') as File).name;
-    const fileBuffer = await file.arrayBuffer();
-
-    try {
-      const data = await put(`${filename}`, fileBuffer, {
-        access: 'public',
-      });
-
-      return NextResponse.json(data);
-    } catch (error) {
-      return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
-    }
+      }
+    })
+    return NextResponse.json(jsonResponse);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to process request' },
-      { status: 500 },
+      { error: (error as Error).message },
+      { status: 400 }, // The webhook will retry 5 times waiting for a 200
     );
   }
 }
