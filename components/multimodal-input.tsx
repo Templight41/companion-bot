@@ -146,6 +146,11 @@ function PureMultimodalInput({
   const uploadFile = async (file: File) => {
     try {
 
+      if(file.size > 18 * 1024 * 1024) {
+        toast.error('File size should be less than 18MB');
+        return;
+      }
+
       const data = await upload(file.name, file, {
         access: 'public',
         handleUploadUrl: '/api/files/upload'
