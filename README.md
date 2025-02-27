@@ -1,7 +1,6 @@
 <h2 align="center">
   An Open-Source AI Chatbot Built With Next.js and the AI SDK by Vercel.
 </h2>
-<br/>
 
 
 ## Running locally
