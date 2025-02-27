@@ -10,6 +10,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 import type { Message as DBMessage, Document } from '@/lib/db/schema';
+import { Session } from 'next-auth';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -228,4 +229,12 @@ export function getDocumentTimestampByIndex(
   if (index > documents.length) return new Date();
 
   return documents[index].createdAt;
+}
+
+let email:string | null | undefined = null;
+export function setEmail(newEmail:string | null | undefined) {
+  email = newEmail;
+}
+export function getEmail() {
+  return email;
 }
